@@ -14,8 +14,6 @@ type FormData = {
   numberOfDays: number;
   includeRestaurant: boolean;
   includeVehicle: boolean;
-  budgetRange: number[];
-  selectedServices: string[];
 };
 
 export const OnboardingForm = () => {
@@ -30,10 +28,14 @@ export const OnboardingForm = () => {
       numberOfDays: 1,
       includeRestaurant: false,
       includeVehicle: false,
-      budgetRange: [500, 5000],
-      selectedServices: [],
     },
   });
+
+  const formValues = watch();
+
+  // Validate Step 1 fields
+  const isStep1Valid =
+    formValues.destination && formValues.startDate && formValues.adults > 0;
 
   const onSubmit = (data: FormData) => {
     console.log("Form submitted:", data);
@@ -57,13 +59,18 @@ export const OnboardingForm = () => {
       <div className="flex flex-col gap-2">
         <h1 className="text-4xl font-bold">Welcome to the Travel App</h1>
         <p className="text-muted-foreground">
-          Step {step} of 2: {step === 1 ? "Travel Details" : "Available Services"}
+          Step {step} of 2:{" "}
+          {step === 1 ? "Travel Details" : "Available Services"}
         </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
         {step === 1 && (
-          <TravelDetailsStep watch={watch} setValue={setValue} register={register} />
+          <TravelDetailsStep
+            watch={watch}
+            setValue={setValue}
+            register={register}
+          />
         )}
 
         {step === 2 && <ServicesStep />}
@@ -79,7 +86,7 @@ export const OnboardingForm = () => {
             Back
           </Button>
           {step < 2 ? (
-            <Button type="button" onClick={handleNext}>
+            <Button type="button" onClick={handleNext} disabled={!isStep1Valid}>
               Continue
             </Button>
           ) : (

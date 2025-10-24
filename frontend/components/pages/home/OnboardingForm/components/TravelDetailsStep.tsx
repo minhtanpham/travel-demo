@@ -54,8 +54,6 @@ type FormData = {
   numberOfDays: number;
   includeRestaurant: boolean;
   includeVehicle: boolean;
-  budgetRange: number[];
-  selectedServices: string[];
 };
 
 interface TravelDetailsStepProps {
