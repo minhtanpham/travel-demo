@@ -1,0 +1,58 @@
+{
+  "kind": "collectionType",
+  "collectionName": "stays",
+  "info": {
+    "singularName": "stay",
+    "pluralName": "stays",
+    "displayName": "Stay",
+    "description": "Manage hotels, homestays and other accommodations"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["hotel", "homestay", "resort", "apartment", "villa", "guesthouse", "hostel"],
+      "required": true
+    },
+    "thumbnail": {
+      "type": "media",
+      "multiple": false,
+      "required": true,
+      "allowedTypes": ["images"]
+    },
+    "images": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "description": {
+      "type": "richtext",
+      "required": false
+    },
+    "pricing": {
+      "type": "decimal",
+      "required": true
+    },
+    "rooms": {
+      "type": "integer",
+      "required": true,
+      "min": 1
+    },
+    "availabilityStart": {
+      "type": "date",
+      "required": false
+    },
+    "availabilityEnd": {
+      "type": "date",
+      "required": false
+    }
+  }
+}
