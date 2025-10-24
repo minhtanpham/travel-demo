@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { TravelDetailsStep } from "./components/TravelDetailsStep";
 import { ServicesStep } from "./components/ServicesStep";
+import { tripService, type BudgetData } from "@/services";
 
 type FormData = {
   destination: string;
@@ -18,6 +19,8 @@ type FormData = {
 
 export const OnboardingForm = () => {
   const [step, setStep] = useState(1);
+  const [budgetData, setBudgetData] = useState<BudgetData[] | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const { register, watch, setValue, handleSubmit } = useForm<FormData>({
     defaultValues: {
@@ -42,9 +45,33 @@ export const OnboardingForm = () => {
     // TODO: Call API function here
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < 2) {
-      setStep(step + 1);
+      setIsLoading(true);
+      try {
+        // Format date to ISO string
+        const startDate = formValues.startDate
+          ? formValues.startDate.toISOString().split("T")[0]
+          : "";
+
+        // Call API to get budget estimation
+        const response = await tripService.craftTrip({
+          startDate,
+          numberOfDays: formValues.numberOfDays,
+          adults: formValues.adults,
+          children: formValues.children,
+          includeRestaurant: formValues.includeRestaurant,
+          includeVehicle: formValues.includeVehicle,
+        });
+
+        setBudgetData(response.data);
+        setStep(step + 1);
+      } catch (error) {
+        console.error("Error fetching budget data:", error);
+        // You might want to show an error toast/notification here
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -73,7 +100,7 @@ export const OnboardingForm = () => {
           />
         )}
 
-        {step === 2 && <ServicesStep />}
+        {step === 2 && <ServicesStep budgetData={budgetData} />}
 
         {/* Navigation Buttons */}
         <div className="flex justify-between gap-4 pt-4">
@@ -86,8 +113,12 @@ export const OnboardingForm = () => {
             Back
           </Button>
           {step < 2 ? (
-            <Button type="button" onClick={handleNext} disabled={!isStep1Valid}>
-              Continue
+            <Button
+              type="button"
+              onClick={handleNext}
+              disabled={!isStep1Valid || isLoading}
+            >
+              {isLoading ? "Loading..." : "Continue"}
             </Button>
           ) : (
             <Button type="submit">Complete</Button>
