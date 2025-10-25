@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { UseFormSetValue, UseFormWatch } from "react-hook-form";
+import { format } from "date-fns";
+import { Check, ChevronsUpDown } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,8 +22,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { format } from "date-fns";
 import { NumberSelector } from "./NumberSelector";
 
 const destinations = [
