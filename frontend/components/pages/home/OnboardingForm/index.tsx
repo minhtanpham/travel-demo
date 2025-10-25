@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import moment from "moment";
 import { Button } from "@/components/ui/button";
 import { TravelDetailsStep } from "./components/TravelDetailsStep";
 import { ServicesStep } from "./components/ServicesStep";
@@ -49,9 +50,9 @@ export const OnboardingForm = () => {
     if (step < 2) {
       setIsLoading(true);
       try {
-        // Format date to ISO string
+        // Format date to YYYY-MM-DD in local timezone
         const startDate = formValues.startDate
-          ? formValues.startDate.toISOString().split("T")[0]
+          ? moment(formValues.startDate).format('YYYY-MM-DD')
           : "";
 
         // Call API to get budget estimation
@@ -100,7 +101,13 @@ export const OnboardingForm = () => {
           />
         )}
 
-        {step === 2 && <ServicesStep budgetData={budgetData} />}
+        {step === 2 && (
+          <ServicesStep
+            budgetData={budgetData}
+            travelers={formValues.adults + formValues.children}
+            numberOfDays={formValues.numberOfDays}
+          />
+        )}
 
         {/* Navigation Buttons */}
         <div className="flex justify-between gap-4 pt-4">

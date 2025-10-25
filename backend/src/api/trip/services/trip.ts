@@ -2,7 +2,37 @@
  * trip service
  */
 
-export default () => ({
+import type { Core } from '@strapi/strapi';
+
+interface ServiceCategory {
+  name: string;
+  apiPath: string;
+  required: boolean;
+  enabled?: boolean;
+  multiplyByDays: boolean;
+}
+
+interface CategoryPricing {
+  [key: string]: number[];
+}
+
+interface CategoryCosts {
+  [key: string]: number;
+}
+
+interface Combination {
+  total: number;
+  breakdown: CategoryCosts;
+}
+
+interface BudgetOption {
+  type: string;
+  totalBudget: number;
+  avgBudgetPerPerson: number;
+  breakdown: CategoryCosts;
+}
+
+export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async calculateBudget(params: {
     startDate: string;
     numberOfDays: number;
@@ -20,107 +50,186 @@ export default () => ({
     } = params;
     const totalPeople = adults + children;
 
-    strapi.log.info('=== Trip Service Debug ===');
-    strapi.log.info(`Input params: ${JSON.stringify(params)}`);
+    // Define service categories configuration
+    // Easy to extend: just add new categories here
+    const serviceCategories: ServiceCategory[] = [
+      {
+        name: 'stay',
+        apiPath: 'api::stay.stay',
+        required: true, // Always fetch stays
+        multiplyByDays: true,
+      },
+      {
+        name: 'restaurant',
+        apiPath: 'api::restaurant.restaurant',
+        required: false,
+        enabled: includeRestaurant,
+        multiplyByDays: true,
+      },
+      {
+        name: 'vehicle',
+        apiPath: 'api::vehicle.vehicle',
+        required: false,
+        enabled: includeVehicle,
+        multiplyByDays: true,
+      },
+      // Future categories can be added here easily:
+      // {
+      //   name: 'tour',
+      //   apiPath: 'api::tour.tour',
+      //   required: false,
+      //   enabled: includeTour,
+      //   multiplyByDays: false,
+      // },
+    ];
 
-    // Fetch all stays, restaurants, and vehicles
-    // Try to fetch all data first to check if any exists
-    const allStays = await strapi.entityService.findMany("api::stay.stay", {
-      fields: ["pricing", "publishedAt", "name"],
-    });
-    strapi.log.info(`Total stays in database: ${allStays.length}`);
-    strapi.log.info(`All stays data: ${JSON.stringify(allStays)}`);
+    // Fetch and calculate costs for all categories
+    const categoryPricing: CategoryPricing = {};
 
-    // In Strapi 5, we need to use status: 'published' in the filters
-    const stays = await strapi.entityService.findMany("api::stay.stay", {
-      status: 'published',
-      fields: ["pricing"],
-    });
-    strapi.log.info(`Published stays: ${stays.length}`);
-    strapi.log.info(`Published stays data: ${JSON.stringify(stays)}`);
+    for (const category of serviceCategories) {
+      // Skip if not required and not enabled
+      if (!category.required && !category.enabled) {
+        categoryPricing[category.name] = [0];
+        continue;
+      }
 
-    const restaurants = includeRestaurant
-      ? await strapi.entityService.findMany("api::restaurant.restaurant", {
-          status: 'published',
-          fields: ["pricing"],
-        })
-      : [];
+      // Fetch items from Strapi
+      const items = await strapi.entityService.findMany(category.apiPath as any, {
+        status: 'published' as any,
+        fields: ['pricing'],
+      }) as any[];
 
-    const vehicles = includeVehicle
-      ? await strapi.entityService.findMany("api::vehicle.vehicle", {
-          status: 'published',
-          fields: ["pricing"],
-        })
-      : [];
-
-    strapi.log.info(`Fetched stays: ${stays.length} items - ${JSON.stringify(stays)}`);
-    strapi.log.info(`Fetched restaurants: ${restaurants.length} items - ${JSON.stringify(restaurants)}`);
-    strapi.log.info(`Fetched vehicles: ${vehicles.length} items - ${JSON.stringify(vehicles)}`);
-
-    // Calculate stay costs (per night * number of days)
-    const stayCosts = stays.map((stay: any) => stay.pricing * numberOfDays);
-    const minStayCost = stayCosts.length > 0 ? Math.min(...stayCosts) : 0;
-    const maxStayCost = stayCosts.length > 0 ? Math.max(...stayCosts) : 0;
-
-    // Calculate restaurant costs (pricing * number of days)
-    let minRestaurantCost = 0;
-    let maxRestaurantCost = 0;
-    if (includeRestaurant && restaurants.length > 0) {
-      const restaurantCosts = restaurants.map(
-        (r: any) => r.pricing * numberOfDays
+      // Calculate costs
+      const costs: number[] = items.map((item: any) =>
+        category.multiplyByDays ? item.pricing * numberOfDays : item.pricing
       );
-      minRestaurantCost = Math.min(...restaurantCosts);
-      maxRestaurantCost = Math.max(...restaurantCosts);
+
+      // Get unique costs sorted
+      const uniqueCosts: number[] = Array.from(new Set(costs)).sort((a: number, b: number) => a - b);
+      categoryPricing[category.name] = uniqueCosts.length > 0 ? uniqueCosts : [0];
     }
 
-    // Calculate vehicle costs (per day * number of days)
-    let minVehicleCost = 0;
-    let maxVehicleCost = 0;
-    if (includeVehicle && vehicles.length > 0) {
-      const vehiclePrices = vehicles.map((v: any) => v.pricing);
-      minVehicleCost = Math.min(...vehiclePrices) * numberOfDays;
-      maxVehicleCost = Math.max(...vehiclePrices) * numberOfDays;
+    // Get min and max for each category
+    const minCosts: CategoryCosts = {};
+    const maxCosts: CategoryCosts = {};
+    for (const category of serviceCategories) {
+      const costs = categoryPricing[category.name];
+      minCosts[category.name] = costs[0];
+      maxCosts[category.name] = costs[costs.length - 1];
     }
 
-    // Calculate total budgets
-    const minTotalBudget = minStayCost + minRestaurantCost + minVehicleCost;
-    const maxTotalBudget = maxStayCost + maxRestaurantCost + maxVehicleCost;
+    // Calculate total min and max budgets
+    const minTotalBudget = Object.values(minCosts).reduce((sum: number, cost: number) => sum + cost, 0);
+    const maxTotalBudget = Object.values(maxCosts).reduce((sum: number, cost: number) => sum + cost, 0);
 
-    // Calculate average per person
     const minAvgPerPerson = totalPeople > 0 ? minTotalBudget / totalPeople : 0;
     const maxAvgPerPerson = totalPeople > 0 ? maxTotalBudget / totalPeople : 0;
 
-    strapi.log.info('Calculated costs:');
-    strapi.log.info(`- Min stay cost: ${minStayCost}`);
-    strapi.log.info(`- Max stay cost: ${maxStayCost}`);
-    strapi.log.info(`- Min restaurant cost: ${minRestaurantCost}`);
-    strapi.log.info(`- Max restaurant cost: ${maxRestaurantCost}`);
-    strapi.log.info(`- Min vehicle cost: ${minVehicleCost}`);
-    strapi.log.info(`- Max vehicle cost: ${maxVehicleCost}`);
-    strapi.log.info(`- Min total budget: ${minTotalBudget}`);
-    strapi.log.info(`- Max total budget: ${maxTotalBudget}`);
+    // Generate all possible combinations dynamically
+    const generateCombinations = (categories: ServiceCategory[], categoryPricing: CategoryPricing): Combination[] => {
+      const combinations: Combination[] = [];
 
-    return [
-      {
+      // Get all pricing options for each category
+      const pricingArrays = categories.map(cat => categoryPricing[cat.name]);
+
+      // Recursive function to generate all combinations
+      const combine = (index: number, currentBreakdown: CategoryCosts): void => {
+        if (index === categories.length) {
+          const total = Object.values(currentBreakdown).reduce((sum: number, cost: number) => sum + cost, 0);
+          combinations.push({ total, breakdown: { ...currentBreakdown } });
+          return;
+        }
+
+        const category = categories[index];
+        const prices = pricingArrays[index];
+
+        for (const price of prices) {
+          combine(index + 1, { ...currentBreakdown, [category.name]: price });
+        }
+      };
+
+      combine(0, {});
+      return combinations;
+    };
+
+    const allCombinations = generateCombinations(serviceCategories, categoryPricing);
+
+    // Remove duplicates and sort by total
+    const uniqueCombinations = Array.from(
+      new Map(allCombinations.map(item => [item.total, item])).values()
+    ).sort((a, b) => a.total - b.total);
+
+    // Build budget options array
+    const budgetOptions: BudgetOption[] = [];
+
+    // Calculate how many middle options to show
+    // Show more options if there are more unique combinations
+    const totalCombinations = uniqueCombinations.length;
+    let maxMiddleOptions = 4; // Default: show up to 4 middle options
+
+    if (totalCombinations <= 3) {
+      maxMiddleOptions = totalCombinations - 2; // Show all if only a few
+    } else if (totalCombinations <= 6) {
+      maxMiddleOptions = 2;
+    } else if (totalCombinations <= 10) {
+      maxMiddleOptions = 3;
+    }
+    // For 10+ combinations, show 4 middle options
+
+    // 1. Minimum option (first combination)
+    if (uniqueCombinations.length > 0) {
+      const minCombo = uniqueCombinations[0];
+      const minAvg = totalPeople > 0 ? minCombo.total / totalPeople : 0;
+
+      budgetOptions.push({
         type: "minimum",
-        totalBudget: parseFloat(minTotalBudget.toFixed(2)),
-        avgBudgetPerPerson: parseFloat(minAvgPerPerson.toFixed(2)),
-        breakdown: {
-          stay: parseFloat(minStayCost.toFixed(2)),
-          restaurant: parseFloat(minRestaurantCost.toFixed(2)),
-          vehicle: parseFloat(minVehicleCost.toFixed(2)),
-        },
-      },
-      {
+        totalBudget: parseFloat(minCombo.total.toFixed(2)),
+        avgBudgetPerPerson: parseFloat(minAvg.toFixed(2)),
+        breakdown: Object.fromEntries(
+          Object.entries(minCombo.breakdown).map(([key, val]: [string, any]) => [key, parseFloat(val.toFixed(2))])
+        ),
+      });
+    }
+
+    // 2. Middle options (evenly distributed)
+    const middleOptions = uniqueCombinations.slice(1, -1);
+    const numMiddleToShow = Math.min(maxMiddleOptions, middleOptions.length);
+
+    if (numMiddleToShow > 0) {
+      // Evenly distribute middle options across the range
+      const step = middleOptions.length / numMiddleToShow;
+
+      for (let i = 0; i < numMiddleToShow; i++) {
+        const index = Math.floor(i * step);
+        const combo = middleOptions[index];
+        const avgPerPerson = totalPeople > 0 ? combo.total / totalPeople : 0;
+
+        budgetOptions.push({
+          type: "standard",
+          totalBudget: parseFloat(combo.total.toFixed(2)),
+          avgBudgetPerPerson: parseFloat(avgPerPerson.toFixed(2)),
+          breakdown: Object.fromEntries(
+            Object.entries(combo.breakdown).map(([key, val]: [string, any]) => [key, parseFloat(val.toFixed(2))])
+          ),
+        });
+      }
+    }
+
+    // 3. Maximum option (last combination)
+    if (uniqueCombinations.length > 1) {
+      const maxCombo = uniqueCombinations[uniqueCombinations.length - 1];
+      const maxAvg = totalPeople > 0 ? maxCombo.total / totalPeople : 0;
+
+      budgetOptions.push({
         type: "maximum",
-        totalBudget: parseFloat(maxTotalBudget.toFixed(2)),
-        avgBudgetPerPerson: parseFloat(maxAvgPerPerson.toFixed(2)),
-        breakdown: {
-          stay: parseFloat(maxStayCost.toFixed(2)),
-          restaurant: parseFloat(maxRestaurantCost.toFixed(2)),
-          vehicle: parseFloat(maxVehicleCost.toFixed(2)),
-        },
-      },
-    ];
+        totalBudget: parseFloat(maxCombo.total.toFixed(2)),
+        avgBudgetPerPerson: parseFloat(maxAvg.toFixed(2)),
+        breakdown: Object.fromEntries(
+          Object.entries(maxCombo.breakdown).map(([key, val]: [string, any]) => [key, parseFloat(val.toFixed(2))])
+        ),
+      });
+    }
+
+    return budgetOptions;
   },
 });

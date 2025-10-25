@@ -20,7 +20,7 @@ export interface BudgetBreakdown {
 }
 
 export interface BudgetData {
-  type: 'minimum' | 'maximum';
+  type: 'minimum' | 'maximum' | 'standard';
   totalBudget: number;
   avgBudgetPerPerson: number;
   breakdown: BudgetBreakdown;

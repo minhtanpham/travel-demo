@@ -5,9 +5,6 @@
 export default {
   async craft(ctx) {
     try {
-      strapi.log.info('=== Trip Craft Controller ===');
-      strapi.log.info(`Received query params: ${JSON.stringify(ctx.query)}`);
-
       const {
         startDate,
         numberOfDays,
@@ -19,7 +16,6 @@ export default {
 
       // Validate required parameters
       if (!startDate || !numberOfDays || !adults) {
-        strapi.log.warn('Missing required parameters');
         return ctx.badRequest('Missing required parameters: startDate, numberOfDays, adults');
       }
 
@@ -33,8 +29,6 @@ export default {
         includeVehicle: includeVehicle === 'true',
       };
 
-      strapi.log.info(`Parsed params: ${JSON.stringify(params)}`);
-
       // Validate numeric values
       if (params.numberOfDays <= 0 || params.adults < 0 || params.children < 0) {
         return ctx.badRequest('Invalid parameter values');
@@ -45,11 +39,7 @@ export default {
       }
 
       // Call service to calculate budget
-      strapi.log.info('Calling calculateBudget service...');
       const budgetData = await strapi.service('api::trip.trip').calculateBudget(params);
-
-      strapi.log.info('Budget calculation complete. Returning response...');
-      strapi.log.info(`Response data: ${JSON.stringify(budgetData)}`);
 
       return ctx.send({
         data: budgetData,
