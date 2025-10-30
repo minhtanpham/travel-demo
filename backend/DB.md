@@ -1,56 +1,61 @@
 ```mermaid
 erDiagram
-    users ||--o{ trips : creates
+    users ||--o{ tours : creates
     locations ||--o{ stays : "has"
     locations ||--o{ restaurants : "has"
     locations ||--o{ vehicles : "has"
-    locations ||--o{ trip_packages : "offers"
-    locations ||--o{ trips : "destination"
+    locations ||--o{ tours : "destination"
 
+    facilities ||--o{ stay_facilities : "used in"
+    stays ||--o{ stay_facilities : "has"
     stays ||--o{ rooms : contains
+
     rooms ||--o{ room_availability : "has availability"
-    rooms ||--o{ trip_stay_bookings : "booked in"
+    rooms ||--o{ tour_stays : "booked in"
 
     vehicles ||--o{ vehicle_availability : "has availability"
-    vehicles ||--o{ trip_vehicle_rentals : "rented in"
+    vehicles ||--o{ tour_vehicles : "rented in"
 
-    restaurants ||--o{ trip_restaurant_bookings : "reserved in"
+    restaurants ||--o{ tour_restaurants : "reserved in"
 
-    trips ||--o{ trip_stay_bookings : includes
-    trips ||--o{ trip_restaurant_bookings : includes
-    trips ||--o{ trip_vehicle_rentals : includes
+    tours ||--o{ tour_stays : includes
+    tours ||--o{ tour_restaurants : includes
+    tours ||--o{ tour_vehicles : includes
+
+    tours ||--o{ tour_pricing : "has pricing"
 
     users {
-        bigint id PK
-        varchar email UK
-        varchar full_name
-        varchar phone
-        timestamp created_at
-        timestamp updated_at
+        string email UK
+        string full_name
+        string phone
     }
 
     locations {
-        bigint id PK
-        varchar name
-        varchar country
-        varchar state_province
+        string name
+        string country
+        string state_province
         text description
-        varchar primary_image_url
+        string primary_image_url
         json images
         decimal latitude
         decimal longitude
         boolean is_active
-        timestamp created_at
+    }
+
+    facilities {
+        string name
+        string icon
+        text description
+        boolean is_active
     }
 
     stays {
-        bigint id PK
-        bigint location_id FK
-        varchar name
+        relation location_id FK
+        string name
         enum stay_type
         text address
         text description
-        varchar primary_image_url
+        string primary_image_url
         json images
         decimal star_rating
         json amenities
@@ -58,16 +63,18 @@ erDiagram
         time check_out_time
         text cancellation_policy
         boolean is_active
-        timestamp created_at
-        timestamp updated_at
+    }
+
+    stay_facilities {
+        relation stay_id FK
+        relation facility_id FK
     }
 
     rooms {
-        bigint id PK
-        bigint stay_id FK
-        varchar room_type
+        relation stay_id FK
+        string room_type
         text description
-        varchar primary_image_url
+        string primary_image_url
         json images
         int max_adults
         int max_children
@@ -76,48 +83,40 @@ erDiagram
         json amenities
         decimal base_price_per_night
         boolean is_active
-        timestamp created_at
-        timestamp updated_at
     }
 
     room_availability {
-        bigint id PK
-        bigint room_id FK
+        relation room_id FK
         date date
         int available_rooms
         decimal price_per_night
-        timestamp created_at
     }
 
     restaurants {
-        bigint id PK
-        bigint location_id FK
-        varchar name
+        relation location_id FK
+        string name
         text address
         text description
-        varchar primary_image_url
+        string primary_image_url
         json images
-        varchar cuisine_type
+        string cuisine_type
         enum price_range
         decimal avg_cost_per_person
         json opening_hours
-        varchar phone
+        string phone
         boolean reservation_required
         boolean is_active
-        timestamp created_at
-        timestamp updated_at
     }
 
     vehicles {
-        bigint id PK
-        bigint location_id FK
-        varchar provider_name
+        relation location_id FK
+        string provider_name
         enum vehicle_type
-        varchar brand
-        varchar model
+        string brand
+        string model
         int year
         text description
-        varchar primary_image_url
+        string primary_image_url
         json images
         enum transmission
         enum fuel_type
@@ -130,44 +129,30 @@ erDiagram
         int min_driver_age
         int total_units
         boolean is_active
-        timestamp created_at
-        timestamp updated_at
     }
 
     vehicle_availability {
-        bigint id PK
-        bigint vehicle_id FK
+        relation vehicle_id FK
         date date
         int available_units
         decimal price_per_day
-        timestamp created_at
     }
 
-    trips {
-        bigint id PK
-        bigint user_id FK
-        bigint location_id FK
+    tours {
+        relation user_id FK
+        relation location_id FK
         date start_date
         date end_date
-        int number_of_days
         int num_adults
         int num_children
         decimal max_budget
-        decimal estimated_min_price
-        decimal estimated_max_price
-        decimal final_total_price
-        boolean needs_restaurant
-        boolean needs_vehicle
+        decimal total_price
         enum status
-        timestamp booking_date
-        timestamp created_at
-        timestamp updated_at
     }
 
-    trip_stay_bookings {
-        bigint id PK
-        bigint trip_id FK
-        bigint room_id FK
+    tour_stays {
+        relation tour_id FK
+        relation room_id FK
         date check_in_date
         date check_out_date
         int num_rooms
@@ -178,30 +163,26 @@ erDiagram
         decimal subtotal_price
         text special_requests
         enum status
-        timestamp created_at
     }
 
-    trip_restaurant_bookings {
-        bigint id PK
-        bigint trip_id FK
-        bigint restaurant_id FK
+    tour_restaurants {
+        relation tour_id FK
+        relation restaurant_id FK
         date reservation_date
         time reservation_time
         int num_people
         decimal estimated_cost
         text special_requests
         enum status
-        timestamp created_at
     }
 
-    trip_vehicle_rentals {
-        bigint id PK
-        bigint trip_id FK
-        bigint vehicle_id FK
+    tour_vehicles {
+        relation tour_id FK
+        relation vehicle_id FK
         date pickup_date
         date return_date
-        varchar pickup_location
-        varchar return_location
+        string pickup_location
+        string return_location
         decimal price_per_day
         int total_days
         decimal subtotal_price
@@ -209,25 +190,16 @@ erDiagram
         decimal insurance_cost
         decimal total_price
         enum status
-        timestamp created_at
     }
 
-    trip_packages {
-        bigint id PK
-        bigint location_id FK
-        varchar package_name
-        text description
-        varchar primary_image_url
-        json images
-        int duration_days
-        enum price_category
+    tour_pricing {
+        relation tour_id FK
+        string component_type
         decimal base_price
-        boolean includes_stay
-        boolean includes_restaurant
-        boolean includes_vehicle
-        int max_adults
-        int max_children
-        boolean is_active
-        timestamp created_at
+        decimal discount_amount
+        decimal discount_percentage
+        decimal tax_amount
+        decimal final_price
+        json breakdown
     }
 ```
