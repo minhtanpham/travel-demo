@@ -118,15 +118,8 @@ erDiagram
         text description
         string primary_image_url
         json images
-        enum transmission
-        enum fuel_type
         int seats_capacity
-        int luggage_capacity
-        json features
         decimal price_per_day
-        decimal insurance_per_day
-        decimal deposit_amount
-        int min_driver_age
         int total_units
         boolean is_active
     }
@@ -186,8 +179,6 @@ erDiagram
         decimal price_per_day
         int total_days
         decimal subtotal_price
-        boolean insurance_included
-        decimal insurance_cost
         decimal total_price
         enum status
     }
