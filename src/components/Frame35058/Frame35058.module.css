@@ -1,0 +1,177 @@
+:root {
+  /* Colors */
+  --f35058-color-text-title: rgb(23, 32, 44); /* #17202C */
+  --f35058-color-text-description: rgb(44, 53, 65); /* #2C3541 */
+  --f35058-color-text-shade: rgb(44, 53, 65); /* #2C3541 */
+  --f35058-color-text-hex: rgb(77, 86, 97); /* #4D5661 */
+  --f35058-color-bg-hex-tag: rgb(241, 245, 247); /* #F1F5F7 */
+
+  /* Spacing */
+  --f35058-spacing-xs: 2px;
+  --f35058-spacing-sm: 4px;
+  --f35058-spacing-md: 8px;
+  --f35058-spacing-lg: 12px;
+  --f35058-spacing-xl: 24px;
+
+  /* Font Families */
+  --f35058-font-family-primary: 'Inter', sans-serif;
+
+  /* Font Sizes */
+  --f35058-font-size-title: 23px;
+  --f35058-font-size-description: 15px;
+  --f35058-font-size-shade: 17px;
+  --f35058-font-size-hex: 13px;
+
+  /* Line Heights (approximated from Figma height/font-size) */
+  --f35058-line-height-title: 1.56; /* 36px / 23px */
+  --f35058-line-height-description: 1.6; /* 24px / 15px */
+  --f35058-line-height-shade: 1.64; /* 28px / 17px */
+  --f35058-line-height-hex: 1.53; /* 20px / 13px */
+}
+
+/* Overall container for the color palette viewer */
+.frame35058 {
+  display: flex;
+  flex-direction: column;
+  gap: var(--f35058-spacing-xl); /* Matches Figma Frame 35058 itemSpacing */
+  width: 100%; /* Component should be fluid */
+  max-width: 1506px; /* Max width to match Figma frame width, but allow responsiveness */
+  margin: 0 auto;
+  padding: var(--f35058-spacing-xl);
+  box-sizing: border-box; /* Include padding in width/height */
+}
+
+/* Header section (title and description) */
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--f35058-spacing-xs); /* Matches Figma Frame 135 itemSpacing */
+  max-width: 800px; /* Matches Figma Frame 135 width */
+}
+
+.title {
+  font-family: var(--f35058-font-family-primary);
+  font-size: var(--f35058-font-size-title);
+  font-weight: 600; /* Semi Bold from Figma */
+  color: var(--f35058-color-text-title);
+  line-height: var(--f35058-line-height-title);
+  margin: 0;
+}
+
+.description {
+  font-family: var(--f35058-font-family-primary);
+  font-size: var(--f35058-font-size-description);
+  font-weight: 400; /* Regular from Figma */
+  color: var(--f35058-color-text-description);
+  line-height: var(--f35058-line-height-description);
+  margin: 0;
+}
+
+/* Container for all color swatches */
+.swatchesContainer {
+  display: flex;
+  flex-wrap: wrap; /* Allow swatches to wrap on smaller screens */
+  gap: var(--f35058-spacing-lg); /* Spacing between swatches */
+  justify-content: flex-start; /* Align swatches to the start */
+  width: 100%;
+}
+
+/* Individual color swatch */
+.colorSwatch {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Matches Figma Color extended counterAxisAlignItems: MIN */
+  gap: var(--f35058-spacing-lg); /* Matches Figma Color extended itemSpacing */
+  width: 100px; /* Matches Figma Color extended width */
+  flex-shrink: 0; /* Prevent shrinking when wrapping */
+  box-sizing: border-box;
+}
+
+.colorBlock {
+  width: 100px; /* Matches Figma Rectangle 183 width */
+  height: 80px; /* Matches Figma Rectangle 183 height */
+  /* background-color is set via inline style for dynamic value */
+}
+
+.colorInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Matches Figma Frame 19 counterAxisAlignItems: MIN */
+  gap: 0; /* Matches Figma Frame 19 itemSpacing */
+  width: 100%;
+}
+
+.shade {
+  font-family: var(--f35058-font-family-primary);
+  font-size: var(--f35058-font-size-shade);
+  font-weight: 500; /* Medium from Figma */
+  color: var(--f35058-color-text-shade);
+  line-height: var(--f35058-line-height-shade);
+  white-space: nowrap; /* Prevent shade number from wrapping */
+}
+
+.hexTag {
+  background-color: var(--f35058-color-bg-hex-tag);
+  border-radius: 4px; /* Matches Figma Frame 17 cornerRadius */
+  padding: var(--f35058-spacing-xs) var(--f35058-spacing-md); /* Matches Figma Frame 17 padding (2px top/bottom, 8px left/right) */
+  display: inline-flex; /* Use inline-flex to shrink to content, but align center */
+  align-items: center;
+  justify-content: center;
+}
+
+.hexCode {
+  font-family: var(--f35058-font-family-primary);
+  font-size: var(--f35058-font-size-hex);
+  font-weight: 400; /* Regular from Figma */
+  color: var(--f35058-color-text-hex);
+  line-height: var(--f35058-line-height-hex);
+  white-space: nowrap; /* Prevent hex code from wrapping */
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .frame35058 {
+    padding: var(--f35058-spacing-lg);
+  }
+  .swatchesContainer {
+    justify-content: center; /* Center swatches when they wrap */
+    gap: var(--f35058-spacing-xl); /* Increase gap for more breathing room on medium screens */
+  }
+}
+
+@media (max-width: 768px) {
+  .frame35058 {
+    padding: var(--f35058-spacing-md);
+  }
+  .header {
+    max-width: 100%; /* Allow header to take full width */
+  }
+  .title {
+    font-size: calc(var(--f35058-font-size-title) * 0.9); /* Slightly smaller title */
+    line-height: calc(var(--f35058-line-height-title) * 0.9);
+  }
+  .description {
+    font-size: calc(var(--f35058-font-size-description) * 0.9); /* Slightly smaller description */
+    line-height: calc(var(--f35058-line-height-description) * 0.9);
+  }
+  .colorSwatch {
+    width: 90px; /* Slightly smaller swatch width */
+  }
+  .colorBlock {
+    width: 90px;
+    height: 70px;
+  }
+}
+
+@media (max-width: 480px) {
+  .frame35058 {
+    padding: var(--f35058-spacing-sm);
+  }
+  .swatchesContainer {
+    gap: var(--f35058-spacing-lg);
+    justify-content: center; /* Ensure centering even on small screens */
+  }
+  .colorSwatch {
+    width: 100px; /* Revert to original size for better tap target or layout */
+  }
+}
